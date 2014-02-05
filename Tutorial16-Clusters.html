@@ -9,54 +9,49 @@
 
   <script type="text/javascript">
 
+      var width = 800,
+          height = 600;
+
 
       var canvas = d3.select("body").append("svg")
-                      .attr("width", 500)
-                      .attr("height", 500)
+                      .attr("width", width)
+                      .attr("height", height)
                       .append("g")
                           .attr("transform", "translate(50,50)");
 
-      var tree = d3.layout.tree()       //Layouts are functions and objects
-                    .size([400,400]);
+      var pack = d3.layout.pack()                            //Layouts are functions and objects - Changed from tree to cluster
+                    .size([width, height - 50])              //Cluster handle nodes without children differently
+                    .padding(10);
 
-      d3.json("/data/myDataTree.json", function (data){       //Load external data
+      //d3.json("/data/myDataPack.json", function (data){                         //Load external data for pack
+      d3.json("/data/myDataBubbles.json", function (data){                        //Load external data for bubbles
 
-        var nodes = tree.nodes(data);                         //Returns array of data as nodes
+        var nodes = pack.nodes(data);                                             //Returns array of data as nodes
 
         //console.log(nodes);
 
-        var links =  tree.links(nodes);                       //Links between the nodes
+        var node = canvas.selectAll(".node")
+                    .data(nodes)
+                    .enter()
+                    .append("g")
+                        .attr("class", "node")
+                        .attr("transform", function (d) { return "translate(" + d.x + "," + d.y + ")"; });
 
-        //console.log(links);
-
-        var node  = canvas.selectAll("node")                  //Bind nodes to the canvas object
-                      .data(nodes)
-                      .enter()
-                      .append("g")
-                          .attr("class", "node")              //Change orientation by flipping x and y values
-                          //.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });   //Top to bottom
-                          .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });   //Left to right
-
-        node.append("circle")                                 //draw a circle to each node                       
-            .attr("r", 5)
-            .attr("fill", "steelblue")
+        node.append("circle")
+              .attr("r", function (d) { return d.r; })
+              //.attr("fill", "steelblue")                                         //Use for pack not for bubbles
+              .attr("fill", function (d) { return d.children ? "#fff" : "steelblue"; })
+              .attr("opacity", 0.25)
+              //.attr("stroke", "#ADADAD")                                         //Use for pack not for bubbles
+              .attr("stroke", function (d) { return d.children ? "#fff" : "#ADADAD"; })
+              .attr("stroke-width", "2");
 
         node.append("text")
-              .text(function(d) { return d.name; });
+              .attr("text-anchor", "middle")
+              .text( function (d) { return d.children ? "" : d.name; });          //Only apply labels to the leaf nodes
 
-        var diagonal = d3.svg.diagonal()
-          .projection(function (d) { return [d.y,d.x]; });   //Shifts diagonal to left to right
 
-        canvas.selectAll(".link")
-                .data(links)
-                .enter()
-                .append("path")
-                .attr("class", "link")
-                .attr("fill", "none")
-                .attr("stroke", "#ADADAD")
-                .attr("d", diagonal);
-
-      })
+      });
 
 
       
